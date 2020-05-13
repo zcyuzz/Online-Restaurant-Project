@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Information management</title>
+    <% include("../layout/css.html"){} %>
+</head>
+<body>
+
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body">
+            <div class="layui-form toolbar">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label w-auto">name：</label>
+                        <div class="layui-input-inline mr0">
+                            <input name="goodsName" class="layui-input" type="text" placeholder="输入商品名"/>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button class="layui-btn icon-btn" lay-filter="searchSubmit" lay-submit>
+                            <i class="layui-icon">&#xe615;</i>search
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <table class="layui-table" id="appraiseTable" lay-filter="appraiseTable"></table>
+        </div>
+    </div>
+</div>
+
+
+<script type="text/html" id="tableBar">
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="view">check comments</a>
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">edit</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">delete</a>
+</script>
+
+
+<script type="text/html" id="modelAppraise">
+    <form id="modelAppraiseForm" lay-filter="modelAppraiseForm" class="layui-form model-form">
+        <input name="appraiseId" type="hidden"/>
+        <div class="layui-form-item">
+            <label class="layui-form-label">Quality:</label>
+            <div class="layui-input-block">
+                <div id="commodityQuality"></div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">Truth：</label>
+            <div class="layui-input-block">
+                <div id="coincide"></div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">Shipping：</label>
+            <div class="layui-input-block">
+                <div id="logisticsService"></div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">Comment</label>
+            <div class="layui-input-block">
+                <textarea name="comments" placeholder="Enter something" class="layui-textarea"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item text-right">
+            <button class="layui-btn layui-btn-primary" type="button" ew-event="closePageDialog">cancel</button>
+            <button class="layui-btn" lay-filter="modelAppraiseSubmit" lay-submit>save</button>
+        </div>
+    </form>
+</script>
+
+<!-- js部分 -->
+<% include("../layout/js.html"){} %>
+<script>
+    layui.use(['layer', 'form', 'table', 'util', 'admin', 'rate', 'tableX'], function () {
+        var $ = layui.jquery;
+        var layer = layui.layer;
+        var form = layui.form;
+        var table = layui.table;
+        var util = layui.util;
+        var admin = layui.admin;
+        var tableX = layui.tableX;
+        var rate = layui.rate;
+
+        // 渲染表格
+        var insTb = tableX.render({
+            elem: '#appraiseTable',
+            url: 'appraise/list',
+            page: true,
+            cellMinWidth: 100,
+            cols: [[
+                {type: 'numbers'},
+                {field: 'goodsSn', title: 'item id'},
+                {field: 'goodsName', title: 'item name'},
+                {field: 'nickName', title: 'customer'},
+                {
+                    field: 'appraiseTime', sort: true, templet: function (d) {
+                        return util.toDateString(d.appraiseTime);
+                    }, title: 'time'
+                },
+                {align: 'center', toolbar: '#tableBar', title: 'edit', width: 300}
+            ]]
+        });
+
+        
+        form.on('submit(searchSubmit)', function (data) {
+            insTb.reload({where: data.field, page: {curr: 1}});
+        });
+
+        
+        table.on('tool(appraiseTable)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+            if (layEvent === 'edit') { 
+                showEditModel(data);
+            } else if (layEvent === 'del') { 
+                doDel(obj);
+            } else if (layEvent === 'view') {  
+                showAppraiseModel(data);
+            }
+        });
+
+       
+        function doDel(obj) {
+            layer.confirm('Are you sure to delete this？', {
+                shade: .1,
+                skin: 'layui-layer-admin'
+            }, function (i) {
+                layer.close(i);
+                layer.load(2);
+                $.post('appraise/delete', {
+                    appraiseId: obj.data.appraiseId
+                }, function (res) {
+                    layer.closeAll('loading');
+                    if (res.code == 200) {
+                        layer.msg(res.msg, {icon: 1});
+                        obj.del();
+                    } else {
+                        layer.msg(res.msg, {icon: 2});
+                    }
+                }, 'json');
+            });
+        }
+
+        function showAppraiseModel(data) {
+            admin.open({
+                type: 1,
+                title: 'Comment',
+                content: $('#modelAppraise').html(),
+                success: function (layero, dIndex) {
+                    $('button[lay-filter=modelAppraiseSubmit]').hide();
+                    $('textarea[name=comments]').attr("disabled",true);
+                    rate.render({
+                        elem: '#commodityQuality'
+                        ,value: data.commodityQuality
+                        ,readonly: true
+                    });
+                    rate.render({
+                        elem: '#logisticsService'
+                        ,value: data.logisticsService
+                        ,readonly: true
+                    });
+                    rate.render({
+                        elem: '#coincide'
+                        ,value: data.coincide
+                        ,readonly: true
+                    });
+                    form.val("modelAppraiseForm",data);
+                }
+            });
+        }
+
+        //修改评价
+        function showEditModel(data){
+            admin.open({
+                type: 1,
+                title: 'edit comment',
+                content: $('#modelAppraise').html(),
+                success: function (layero, dIndex) {
+                   var star1= rate.render({
+                        elem: '#commodityQuality'
+                        ,value: data.commodityQuality
+                    });
+                   var star2= rate.render({
+                        elem: '#logisticsService'
+                        ,value: data.logisticsService
+                    });
+                   var star3= rate.render({
+                        elem: '#coincide'
+                        ,value: data.coincide
+                    });
+                    form.val("modelAppraiseForm",data);
+                   
+                    form.on('submit(modelAppraiseSubmit)', function (data) {
+                        data.field.commodityQuality=star1.config.value;
+                        data.field.logisticsService=star2.config.value;
+                        data.field.coincide=star3.config.value;
+                        layer.load(2);
+                        $.post('appraise/update', data.field, function (res) {
+                            layer.closeAll('loading');
+                            if (res.code == 200) {
+                                layer.close(dIndex);
+                                layer.msg(res.msg, {icon: 1});
+                                insTb.reload();
+                            } else {
+                                layer.msg(res.msg, {icon: 2});
+                            }
+                        }, 'json');
+                        return false;
+                    });
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

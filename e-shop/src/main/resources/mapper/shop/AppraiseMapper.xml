@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cz.spring.shop.dao.AppraiseMapper">
+
+    <select id="listFull" resultType="com.cz.spring.shop.model.Appraise">
+        select
+        app.*,
+        u.nick_name as nickName,
+        u.avatar as avatar,
+        g.goods_name as goodsName
+        from e_appraise app
+        left join sys_user u on app.user_id=u.user_id
+        left join e_goods g on app.goods_sn=g.goods_sn
+        <where>
+            <if test="page.pageData.userId!=null">
+                app.user_id=#{page.pageData.userId}
+            </if>
+            <if test="page.pageData.goodsSn!=null">
+                app.goods_sn=#{page.pageData.goodsSn}
+            </if>
+            <if test="page.pageData.goodsName!=null">
+                and g.goods_name like '%${page.pageData.goodsName}%'
+            </if>
+        </where>
+        order by app.appraise_time desc
+    </select>
+</mapper>

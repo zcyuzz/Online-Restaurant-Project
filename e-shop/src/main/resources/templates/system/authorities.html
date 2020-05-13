@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>authority management</title>
+    <% include("../layout/css.html"){} %>
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body">
+            <div class="layui-form toolbar">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label w-auto">Search</label>
+                        <div class="layui-input-inline mr0">
+                            <input id="edtSearch" class="layui-input" type="text" placeholder=""/>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button id="btnSearch" class="layui-btn icon-btn"><i class="layui-icon">&#xe615;</i>Search</button>
+                        <button id="btnAdd" class="layui-btn icon-btn"><i class="layui-icon">&#xe654;</i>add</button>
+                    </div>
+                </div>
+            </div>
+
+            <table class="layui-table" id="authTable" lay-filter="authTable"></table>
+        </div>
+    </div>
+</div>
+
+<script type="text/html" id="tableBar">
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">update</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">delete</a>
+</script>
+<script type="text/html" id="modelAuth">
+    <form id="modelAuthForm" lay-filter="modelAuthForm" class="layui-form model-form">
+        <input name="authorityId" type="hidden"/>
+        <div class="layui-form-item">
+            <label class="layui-form-label">back to superior menu</label>
+            <div class="layui-input-block">
+                <select name="parentId">
+                    <option value="">select</option>
+                    <% for(authoritie in authorities) { %>
+                    <option value="${authoritie.authorityId}">${authoritie.authorityName}</option>
+                    <% } %>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">authority</label>
+            <div class="layui-input-block">
+                <input name="authorityName" placeholder="" type="text" class="layui-input" maxlength="50"
+                       lay-verType="tips" lay-verify="required" required/>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">authority type</label>
+            <div class="layui-input-block">
+                <input lay-filter="isMenu" name="isMenu" type="radio" value="0" title="list" checked/>
+                <input lay-filter="isMenu" name="isMenu" type="radio" value="1" title="button"/>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">url</label>
+            <div class="layui-input-block">
+                <input name="menuUrl" placeholder="please enter url" type="text" class="layui-input"/>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">authority label</label>
+            <div class="layui-input-block">
+                <input name="authority" placeholder="" type="text" class="layui-input"/>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">authority icon</label>
+            <div class="layui-input-block">
+                <input name="menuIcon" placeholder="" type="text" class="layui-input"/>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">odernumber</label>
+            <div class="layui-input-block">
+                <input name="orderNumber" placeholder="" type="number" class="layui-input" min="0" max="1000"
+                       lay-verType="tips" lay-verify="required|number" required/>
+            </div>
+        </div>
+        <div class="layui-form-item text-right">
+            <button class="layui-btn layui-btn-primary" type="button" ew-event="closePageDialog">cancel</button>
+            <button class="layui-btn" lay-filter="modelAuthSubmit" lay-submit>save</button>
+        </div>
+    </form>
+</script>
+
+<!-- js部分 -->
+<% include("../layout/js.html"){} %>
+<script>
+    layui.use(['layer', 'form', 'table', 'admin', 'treetable'], function () {
+        var $ = layui.jquery;
+        var layer = layui.layer;
+        var form = layui.form;
+        var table = layui.table;
+        var admin = layui.admin;
+        var treetable = layui.treetable;
+
+        // 渲染表格
+        function renderTable() {
+            treetable.render({
+                treeColIndex: 1,
+                treeSpid: -1,
+                treeIdName: 'authorityId',
+                treePidName: 'parentId',
+                elem: '#authTable',
+                url: 'authorities/list',
+                cellMinWidth: 100,
+                cols: [[
+                    {type: 'numbers'},
+                    {field: 'authorityName', title: 'Authority', minWidth: 200},
+                    {
+                        title: 'Authority Label', templet: function (d) {
+                            return d.isMenu == 0 ? d.menuUrl : d.authority;
+                        }
+                    },
+                    {
+                        title: 'Authority icon', templet: function (d) {
+                            return '<i class="' + d.menuIcon + '"></i>';
+                        }, align: 'center', width: 120
+                    },
+                    {field: 'orderNumber', title: 'id', align: 'center', width: 100},
+                    {
+                        title: 'type', templet: function (d) {
+                            var strs = ['<span class="layui-badge layui-bg-blue">list</span>', '<span class="layui-badge-rim">button</span>'];
+                            return strs[d.isMenu];
+                        }, align: 'center', width: 120
+                    },
+                    {templet: '#tableBar', title: 'Action', align: 'center', width: 140, minWidth: 140}
+                ]]
+            });
+        }
+
+        renderTable();
+
+        $('#btnAdd').click(function () {
+            showEditModel();
+        });
+
+        table.on('tool(authTable)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+            if (layEvent === 'edit') { 
+                showEditModel(data);
+            } else if (layEvent === 'del') { 
+                doDel(data.authorityId, data.authorityName);
+            }
+        });
+
+        function doDel(authorityId, authorityName) {
+            layer.confirm('are you sure to delete' + authorityName + '?', {
+                shade: .1,
+                skin: 'layui-layer-admin'
+            }, function (index) {
+                layer.close(index);
+                layer.load(2);
+                $.post('authorities/delete', {
+                    authorityId: authorityId
+                }, function (res) {
+                    layer.closeAll('loading');
+                    if (res.code == 200) {
+                        layer.msg(res.msg, {icon: 1});
+                        renderTable();
+                    } else {
+                        layer.msg(res.msg, {icon: 2});
+                    }
+                }, 'json');
+            });
+        }
+
+     
+        function showEditModel(mAuth) {
+            admin.open({
+                type: 1,
+                title: (mAuth ? 'update' : 'add') + 'authority',
+                content: $('#modelAuth').html(),
+                success: function (layero, dIndex) {
+                    $(layero).children('.layui-layer-content').css('overflow', 'visible');
+                    var url = mAuth ? 'authorities/update' : 'authorities/add';
+                    if (mAuth && mAuth.isMenu == '1') {
+                        $('input[name="isMenu"][value="1"]').prop("checked", true);
+                    }
+                    form.val('modelAuthForm', mAuth);  // 回显数据
+                    // 表单提交事件
+                    form.on('submit(modelAuthSubmit)', function (data) {
+                        if (data.field.parentId == '') {
+                            data.field.parentId = '-1';
+                        }
+                        layer.load(2);
+                        $.post(url, data.field, function (res) {
+                            layer.closeAll('loading');
+                            if (res.code == 200) {
+                                layer.close(dIndex);
+                                layer.msg(res.msg, {icon: 1});
+                                renderTable();
+                            } else {
+                                layer.msg(res.msg, {icon: 2});
+                            }
+                        }, 'json');
+                        return false;
+                    });
+                    // 监听radio单选
+                    form.on('radio(isMenu)', function (data) {
+                        changeRadio(data.value);
+
+                    });
+
+                    function changeRadio(value) {
+                        if (value == 0) {
+                            $('[name="menuUrl"]').parent().parent().show();
+                            $('[name="menuIcon"]').parent().parent().show();
+                            $('[name="authority"]').parent().parent().hide();
+                        } else {
+                            $('[name="menuUrl"]').parent().parent().hide();
+                            $('[name="menuIcon"]').parent().parent().hide();
+                            $('[name="authority"]').parent().parent().show();
+                        }
+                    }
+
+                    changeRadio(mAuth ? mAuth.isMenu : 0);
+                }
+            });
+        }
+
+        
+        $('#btnSearch').click(function () {
+            $('#edtSearch').removeClass('layui-form-danger');
+            var keyword = $('#edtSearch').val();
+            var $tds = $('#authTable').next('.treeTable').find('.layui-table-body tbody tr td');
+            $tds.css('background-color', 'transparent');
+            if (!keyword) {
+                layer.tips('', '#edtSearch', {tips: [1, '#ff4c4c']});
+                $('#edtSearch').addClass('layui-form-danger');
+                $('#edtSearch').focus();
+                return;
+            }
+            var searchCount = 0;
+            $tds.each(function () {
+                if ($(this).text().indexOf(keyword) >= 0) {
+                    $(this).css('background-color', '#FAE6A0');
+                    if (searchCount == 0) {
+                        $('body,html').stop(true);
+                        $('body,html').animate({scrollTop: $(this).offset().top - 150}, 500);
+                    }
+                    searchCount++;
+                }
+            });
+            if (searchCount == 0) {
+                layer.msg("没有匹配结果", {icon: 5, anim: 6});
+            } else {
+                treetable.expandAll('#authTable');
+            }
+        });
+
+    });
+</script>
+
+</body>
+</html>

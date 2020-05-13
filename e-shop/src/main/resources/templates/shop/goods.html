@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Menu management</title>
+    <link rel="stylesheet" href="${ctxPath}/assets/module/formSelects/formSelects-v4.css"/>
+    <% include("../layout/css.html"){} %>
+</head>
+<style>
+    body {
+        overflow: scroll;
+    }
+    #goodsTable + .layui-table-view .layui-table-body tbody > tr > td {
+        padding: 0;
+    }
+
+    #goodsTable + .layui-table-view .layui-table-body tbody > tr > td > .layui-table-cell {
+        height: 48px;
+        line-height: 48px;
+    }
+
+    .tdImg {
+        width: 40px;
+        height: 40px;
+        cursor: zoom-in;
+        border-radius: 50%;
+        border: 2px solid #dddddd;
+    }
+
+    .form-item-title {
+        text-align: center;
+        position: relative;
+    }
+
+    .form-item-title:before {
+        content: "";
+        position: absolute;
+        border-top: 1px dashed #ccc;
+        left: 40px;
+        right: 40px;
+        top: 8px;
+        z-index: -1;
+    }
+
+    .form-item-title > span {
+        background-color: white;
+        padding: 0 10px;
+        font-size: 13px;
+        color: #666;
+    }
+    .layui-upload-img {
+        width: 92px;
+        height: 92px;
+        margin: 0 10px 10px 0;
+    }
+
+    .imgDiv {
+        display: inline-block;
+        position: relative;
+    }
+    .imgDiv .delete {
+        position: absolute;
+        top: 0px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+    }
+</style>
+<body>
+<!-- 正文开始 -->
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body">
+            <div class="layui-form toolbar">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label w-auto">name:</label>
+                        <div class="layui-input-inline mr0">
+                            <input name="goodsName" class="layui-input" type="text" placeholder=""/>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label w-auto">type:：</label>
+                        <div class="layui-input-inline mr0">
+                            <select name="goodsType">
+                                <option value="">Select</option>
+                                <option value="1">Pizza</option>
+                            	<option value="2">Chinese food</option>
+                            	<option value="3">Sushi</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button class="layui-btn icon-btn" lay-filter="searchSubmit" lay-submit>
+                            <i class="layui-icon">&#xe615;</i>search
+                        </button>
+                        <button class="layui-btn icon-btn" id="btnAdd">
+                            <i class="layui-icon">&#xe654;</i>new
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <table id="goodsTable" lay-filter="goodsTable"></table>
+        </div>
+    </div>
+</div>
+
+<!-- 表格操作列 -->
+<script type="text/html" id="tableBar">
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">edit</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">delete</a>
+</script>
+<!-- 表单弹窗 -->
+<script type="text/html" id="modelGoods">
+    <form id="modelGoodsForm" lay-filter="modelGoodsForm" class="layui-form layui-row model-form">
+        <input name="goodsId" type="hidden"/>
+        <input name="goodsImg" type="hidden"/>
+        <div class="layui-row">
+            <div class="layui-col-md6">
+                <div class="layui-form-item">
+                    <label class="layui-form-label layui-form-required">name</label>
+                    <div class="layui-input-block">
+                        <input name="goodsName" placeholder="Enter name" type="text" class="layui-input" maxlength="100"
+                               lay-verType="tips" lay-verify="required" required/>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label layui-form-required">type</label>
+                    <div class="layui-input-block">
+                        <select name="goodsType" lay-filter="goodsTypeFilter" lay-verType="tips" lay-verify="required" required>
+                            <option value="">select</option>
+                            <option value="1">Pizza</option>
+                            <option value="2">Chinese food</option>
+                            <option value="3">Sushi</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item" id="LAY-PRICE">
+                    <label class="layui-form-label layui-form-required">price</label>
+                    <div class="layui-input-block">
+                        <input name="shopPrice" placeholder="enter price" type="number" class="layui-input" maxlength="100"
+                               lay-verType="tips" lay-verify="required" required/>
+                    </div>
+                </div>
+                <div class="layui-form-item" id="LAY-RE-PRICE">
+                    <label class="layui-form-label layui-form-required">regular price</label>
+                    <div class="layui-input-block">
+                        <input name="shopRePrice" placeholder="enter regular price" type="number" class="layui-input" maxlength="100"
+                               lay-verType="tips" lay-verify="required" required/>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">description</label>
+                    <div class="layui-input-block">
+                        <textarea name="goodsDesc" placeholder="enter discription" class="layui-textarea" maxlength="200"></textarea>
+                    </div>
+                </div>
+
+            </div>
+            <div class="layui-col-md6">
+                <div class="layui-form-item form-item-title"><span>Food image</span></div>
+                <div class="layui-form-item" style="text-align: center">
+                    <div class="layui-upload-drag" id="uploadModel">
+                        <i class="layui-icon"></i>
+                        <p>click to upload or drop image here</p>
+                        <div class="layui-hide" id="uploadDemoView">
+                            <hr>
+                            <img src="" alt="" style="max-width: 196px">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md12">
+                <input name="goodsDetailsImgs"  type="hidden" value="" />
+                <div class="layui-form-item form-item-title"><span>food image</span></div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <div class="layui-upload">
+                            <button type="button" class="layui-btn" id="test2">upload multi images</button>
+                            <blockquote class="layui-elem-quote layui-quote-nm" style="margin-top: 10px;">
+                                sample:
+                                <div class="layui-upload-list" id="demo2"></div>
+                            </blockquote>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item text-right">
+            <button class="layui-btn layui-btn-primary" type="button" ew-event="closePageDialog">cancel</button>
+            <button class="layui-btn" lay-filter="modelGoodsSubmit" lay-submit>save</button>
+        </div>
+    </form>
+</script>
+
+<script type="text/html" id="tableSaleState">
+    <input type="checkbox" lay-filter="saleState" value="{{d.goodsId}}" lay-skin="switch"
+           lay-text="yes|no" {{d.isSale==1?'checked':''}}/>
+</script>
+
+<script type="text/html" id="demoTableEDCommentsBar">
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">delete</a>
+</script>
+<!-- js部分 -->
+<% include("../layout/js.html"){} %>
+<script>
+    layui.use(['layer', 'form', 'table', 'util', 'admin', 'tableX','upload','formSelects'], function () {
+        var $ = layui.jquery;
+        var layer = layui.layer;
+        var form = layui.form;
+        var table = layui.table;
+        var util = layui.util;
+        var admin = layui.admin;
+        var tableX = layui.tableX;
+        var upload = layui.upload;
+        var formSelects = layui.formSelects;
+
+        // 渲染表格
+        var insTb = tableX.render({
+            elem: '#goodsTable',
+            url: 'goods/list',
+            page: true,
+            cellMinWidth: 100,
+            cols: [[
+                {type: 'numbers'},
+                {
+                    align: 'center', templet: function (d) {
+                        return '<img src="' + d.goodsImg + '" class="tdImg" tb-img/>';
+                    }, title: 'food image', width: 90, unresize: true
+                },
+                {field: 'goodsSn', title: 'food id'},
+                {field: 'goodsName', title: 'food name'},
+                {field: 'shopPrice', title: 'food', sort: true},
+                {
+                    field: 'goodsType', sort: true, templet: function (d) {
+                        if(d.goodsType==1){
+                            return '<span>Pizza</span>'
+                        }else if(d.goodsType==2){
+                            return '<span>Chinese food</span>'
+                        }else{
+                            return '<span>Sushi</span>'
+                        }
+                    }, title: 'food type'
+                },
+                {field: 'nickName', title: 'publisher', sort: true},
+                {
+                    field: 'createTime', sort: true, templet: function (d) {
+                        return util.toDateString(d.createTime);
+                    }, title: 'Create time'
+                },
+                {field: 'isSale', templet: '#tableSaleState', title: 'available', sort: true, width: 110},
+                {field: 'goodsDesc', title: 'food description'},
+                {align: 'center', toolbar: '#tableBar', title: 'update', width: 200}
+            ]]
+        });
+  
+        $(document).off('click.tbImg').on('click.tbImg', '[tb-img]', function () {
+            layer.photos({photos: {data: [{src: $(this).attr('src')}]}, shade: .1, closeBtn: true});
+        });
+
+
+        $('#btnAdd').click(function () {
+            showEditModel();
+        });
+
+
+        form.on('submit(searchSubmit)', function (data) {
+            insTb.reload({where: data.field, page: {curr: 1}});
+        });
+
+
+        table.on('tool(goodsTable)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+            if (layEvent === 'edit') { 
+                showEditModel(data);
+            } else if (layEvent === 'del') { 
+                doDel(obj);
+            }
+        });
+
+       
+        form.on('submit(searchSubmit)', function (data) {
+            insTb.reload({where: data.field, page: {curr: 1}});
+        });
+
+
+        function showEditModel(mGoods) {
+            admin.open({
+                type: 1,
+                title: (mGoods ? 'update' : 'add') + 'food',
+                content: $('#modelGoods').html(),
+                area:'90%',
+                success: function (layero, dIndex) {
+                    $(layero).children('.layui-layer-content').css('overflow', 'visible');
+                    //拖拽上传
+                    upload.render({
+                        elem: '#uploadModel'
+                        ,url: '/file/upload'
+                        ,done: function(res){
+                            if(res.code == 200){
+                                $('input[name=goodsImg]').val(res.data);
+                                layer.msg(res.msg, {icon: 1});
+                                layui.$('#uploadDemoView').removeClass('layui-hide').find('img').attr('src', res.data);
+                            } else {
+                                layer.msg(res.msg, {icon: 2});
+                            }
+                        }
+                    });
+                  
+                    upload.render({
+                        elem: '#test2'
+                        ,url: '/file/upload'
+                        ,multiple: true
+                        ,number:6
+                        ,before: function(obj){
+                        
+                            obj.preview(function(index, file, result){
+                                var h= '<div class="imgDiv">'+
+                                            '<img style="margin-left:5px" src="'+ result +'" alt="'+ file.name +'" class="layui-upload-img">'+
+                                            '<a href="javascript:void(0)" id="'+ result +'" onclick="test(this.id)">'+
+                                            '<img src="${ctxPath}/assets/images/delete.png" class="delete" />'+
+                                            '</a>'+
+                                        '</div>';
+                                $('#demo2').append(h)
+                            });
+                        }
+                        ,done: function(res){
+                            var text;
+                            if(res.data){
+                                var str=res.data;
+                                text=$('input[name=goodsDetailsImgs]').val()+","+str+",";
+                                if (text.substr(0,1)==',') text=text.substr(1);
+                                var regs=/,$/gi;
+                                text=text.replace(regs,"");
+                                layer.msg(res.msg, {icon: 1});
+                            }
+                            $('input[name=goodsDetailsImgs]').val(text);
+                        }
+                    });
+                    var url = mGoods ? 'goods/update' : 'goods/add';
+                    
+                    var colorIds = new Array();
+                    if(mGoods){
+                        if(mGoods.goodsType==3){
+                            $('#LAY-PRICE').hide();
+                            $('#LAY-RE-PRICE').hide();
+                            $('input[name=shopPrice]').removeAttr("required");
+                            $('input[name=shopPrice]').removeAttr("lay-verify");
+                            $('input[name=shopPrice]').removeAttr("lay-verType");
+                            $('input[name=shopRePrice]').removeAttr("required");
+                            $('input[name=shopRePrice]').removeAttr("lay-verify");
+                            $('input[name=shopRePrice]').removeAttr("lay-verType");
+                        }
+                        form.val('modelGoodsForm', mGoods);
+                        layui.$('#uploadDemoView').removeClass('layui-hide').find('img').attr('src', mGoods.goodsImg);
+                        if(mGoods.goodsColors){
+                            colorIds=mGoods.goodsColors.split(",");
+                        }
+                        if(mGoods.goodsDetailsImgs){
+                            var imgsArr=mGoods.goodsDetailsImgs.split(",");
+                            var h="";
+                            for(i = 0,len=imgsArr.length;  i< len; i++){
+                                 h+= '<div class="imgDiv" id="'+ imgsArr[i] +'">'+
+                                            '<img style="margin-left:5px" src="'+ imgsArr[i] +'" class="layui-upload-img">'+
+                                            '<a href="javascript:void(0)" id="'+ imgsArr[i] +'" onclick="test(this.id)">'+
+                                                '<img src="${ctxPath}/assets/images/delete.png" class="delete" />'+
+                                            '</a>'+
+                                        '</div>';
+                            }
+                            $('#demo2').html(h)
+                        }
+                    }else{
+                        form.render('select');
+                    }
+                    formSelects.render('colorId', {init: colorIds});
+                    formSelects.btns('colorId', ['select', 'remove', 'reverse'], {space: '15px'});
+                    
+                    form.on('submit(modelGoodsSubmit)', function (data) {
+                        if(data.field.goodsImg==''){
+                            layer.tips("upload one image for food",'#uploadModel',{
+                                tips: [1, 'rgb(255,76,76)']
+                            });
+                        }else{
+                            data.field.goodsColors = formSelects.value('colorId', 'valStr');
+                            var imgs=data.field.goodsDetailsImgs;
+                          
+                            if (imgs.substr(0,1)==',') imgs=imgs.substr(1);
+                           
+                            var reg=/,$/gi;
+                            imgs=imgs.replace(reg,"");
+                            console.log(imgs);
+                            data.field.goodsDetailsImgs=imgs;
+                            console.log(data.field);
+                            layer.load(2);
+                            $.post(url, data.field, function (res) {
+                                layer.closeAll('loading');
+                                if (res.code == 200) {
+                                    layer.close(dIndex);
+                                    layer.msg(res.msg, {icon: 1});
+                                    insTb.reload();
+                                } else {
+                                    layer.msg(res.msg, {icon: 2});
+                                }
+                            }, 'json');
+                        }
+                        return false;
+                    });
+                }
+            });
+        }
+         window.test=function(path){
+             var imgs=$('input[name=goodsDetailsImgs]').val();
+             var arr=imgs.split(",");
+             arr.splice(contains(arr,path),1);
+             $('input[name=goodsDetailsImgs]').val(arr.join(","));
+             var h="";
+             for(i = 0,len=arr.length;  i< len; i++){
+                 h+= '<div class="imgDiv" id="'+ arr[i] +'">'+
+                        '<img style="margin-left:5px" src="'+ arr[i] +'" class="layui-upload-img">'+
+                     '<a href="javascript:void(0)" id="'+ arr[i] +'" onclick="test(this.id)">'+
+                     '<img src="${ctxPath}/assets/images/delete.png" class="delete" />'+
+                     '</a>'+
+                     '</div>';
+             }
+             $('#demo2').html(h)
+         }
+        function contains(a, obj) {
+            var i = a.length;
+            while (i--) {
+                if (a[i] === obj) {
+                    return i;
+                }
+            }
+            return false;
+        }
+
+
+        function doDel(obj) {
+            layer.confirm('are you sure to delete this?', {
+                shade: .1,
+                skin: 'layui-layer-admin'
+            }, function (i) {
+                layer.close(i);
+                layer.load(2);
+                $.post('goods/delete', {
+                    goodsId: obj.data.goodsId
+                }, function (res) {
+                    layer.closeAll('loading');
+                    if (res.code == 200) {
+                        layer.msg(res.msg, {icon: 1});
+                        obj.del();
+                    } else {
+                        layer.msg(res.msg, {icon: 2});
+                    }
+                }, 'json');
+            });
+        }
+
+  
+        form.on('switch(saleState)', function (obj) {
+            layer.load(2);
+            $.post('goods/updateState', {
+                goodsId: obj.elem.value,
+                isSale: obj.elem.checked ? 1 : 0
+            }, function (res) {
+                layer.closeAll('loading');
+                if (res.code == 200) {
+                    layer.msg(res.msg, {icon: 1});
+                } else {
+                    layer.msg(res.msg, {icon: 2});
+                    $(obj.elem).prop('checked', !obj.elem.checked);
+                    form.render('checkbox');
+                }
+            }, 'json');
+        });
+
+    });
+</script>
+</body>
+</html>

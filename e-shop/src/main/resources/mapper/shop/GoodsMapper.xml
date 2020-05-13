@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cz.spring.shop.dao.GoodsMapper">
+
+    <select id="list" resultType="com.cz.spring.shop.model.Goods">
+        SELECT e.*,b.nick_name AS nickName
+        FROM e_goods e
+        left join sys_user b on e.publish_id=b.user_id
+        <where>   
+        	1=1
+            <if test="page.pageData.goodsName!=null">
+                and e.goods_name like '%${page.pageData.goodsName}%'
+            </if>
+            <if test="page.pageData.goodsType!=null">
+                and e.goods_type like '%${page.pageData.goodsType}%'
+            </if>
+            <if test="page.pageData.publish_id!=null">
+                and e.publish_id =#{page.pageData.publish_id}
+            </if>
+        </where>
+    </select>
+    
+    <select id="listFull" resultType="com.cz.spring.shop.model.Goods">
+        SELECT e.*,b.nick_name AS nickName
+        FROM e_goods e
+        left join sys_user b on e.publish_id=b.user_id
+        <where>
+            e.is_sale=1 and e.goods_type!=3
+            <if test="page.pageData.keyword!=null">
+                and
+                (e.goods_name like '%${page.pageData.keyword}%'
+                or
+                  e.goods_desc like '%${page.pageData.keyword}%'
+                or
+                  e.shop_price like '%${page.pageData.keyword}%')
+            </if>
+            <if test="page.pageData.publish_id!=null">
+                and e.publish_id =#{page.pageData.publish_id}
+            </if>
+        </where>
+    </select>
+
+    <select id="listByType" resultType="com.cz.spring.shop.model.Goods">
+        SELECT e.*
+        FROM e_goods e
+        <where>
+            e.is_sale=1
+            <if test="page.pageData.goodsType!=null">
+                and e.goods_type =#{page.pageData.goodsType}
+            </if>
+        </where>
+    </select>
+</mapper>

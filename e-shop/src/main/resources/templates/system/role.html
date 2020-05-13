@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>role management</title>
+    <% include("../layout/css.html"){} %>
+</head>
+<body>
+
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body">
+            <div class="layui-form toolbar">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label w-auto">role：</label>
+                        <div class="layui-input-inline mr0">
+                            <input name="roleName" class="layui-input" type="text" placeholder=""/>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button class="layui-btn icon-btn" lay-filter="searchSubmit" lay-submit>
+                            <i class="layui-icon">&#xe615;</i>search
+                        </button>
+                        <button id="btnAdd" class="layui-btn icon-btn"><i class="layui-icon">&#xe654;</i>add</button>
+                    </div>
+                </div>
+            </div>
+
+            <table class="layui-table" id="roleTable" lay-filter="roleTable"></table>
+        </div>
+    </div>
+</div>
+
+
+<script type="text/html" id="tableBar">
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">update</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">delete</a>
+    <a class="layui-btn layui-btn-xs" lay-event="auth">权限分配</a>
+</script>
+
+<script type="text/html" id="modelRole">
+    <form id="modelRoleForm" lay-filter="modelRoleForm" class="layui-form model-form">
+        <input name="roleId" type="hidden"/>
+        <div class="layui-form-item">
+            <label class="layui-form-label">role</label>
+            <div class="layui-input-block">
+                <input name="roleName" placeholder="" type="text" class="layui-input" maxlength="20"
+                       lay-verType="tips" lay-verify="required" required/>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">comment</label>
+            <div class="layui-input-block">
+                <textarea name="comments" placeholder="" class="layui-textarea" maxlength="200"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item text-right">
+            <button class="layui-btn layui-btn-primary" type="button" ew-event="closePageDialog">cancel</button>
+            <button class="layui-btn" lay-filter="modelRoleSubmit" lay-submit>save</button>
+        </div>
+    </form>
+</script>
+
+
+<% include("../layout/js.html"){} %>
+<script>
+    layui.use(['layer', 'form', 'table', 'util', 'admin', 'zTree', 'tableX'], function () {
+        var $ = layui.jquery;
+        var layer = layui.layer;
+        var form = layui.form;
+        var table = layui.table;
+        var util = layui.util;
+        var admin = layui.admin;
+        var tableX = layui.tableX;
+
+        var insTb = tableX.render({
+            elem: '#roleTable',
+            url: 'role/list',
+            page: true,
+            cellMinWidth: 100,
+            cols: [[
+                {type: 'numbers'},
+                {field: 'roleName', title: 'role', sort: true},
+                {field: 'comments', title: 'comment', sort: true},
+                {
+                    field: 'createTime', sort: true, templet: function (d) {
+                        return util.toDateString(d.createTime);
+                    }, title: 'create time'
+                },
+                {align: 'center', toolbar: '#tableBar', title: 'action', width: 200}
+            ]]
+        });
+
+
+        $('#btnAdd').click(function () {
+            showEditModel();
+        });
+
+
+        form.on('submit(searchSubmit)', function (data) {
+            insTb.reload({where: data.field, page: {curr: 1}});
+        });
+
+
+        table.on('tool(roleTable)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+            if (layEvent === 'edit') {
+                showEditModel(data);
+            } else if (layEvent === 'del') { 
+                doDel(obj);
+            } else if (layEvent === 'auth') {  
+                showPermModel(data.roleId);
+            }
+        });
+
+        // 删除
+        function doDel(obj) {
+            layer.confirm('are you sure to delete' + obj.data.roleName + '”?', {
+                shade: .1,
+                skin: 'layui-layer-admin'
+            }, function (i) {
+                layer.close(i);
+                layer.load(2);
+                $.post('role/delete', {
+                    roleId: obj.data.roleId
+                }, function (res) {
+                    layer.closeAll('loading');
+                    if (res.code == 200) {
+                        layer.msg(res.msg, {icon: 1});
+                        obj.del();
+                    } else {
+                        layer.msg(res.msg, {icon: 2});
+                    }
+                }, 'json');
+            });
+        }
+
+
+        function showEditModel(mRole) {
+            admin.open({
+                type: 1,
+                title: (mRole ? 'update' : 'add') + 'role',
+                content: $('#modelRole').html(),
+                success: function (layero, dIndex) {
+                    var url = mRole ? 'role/update' : 'role/add';
+                    form.val('modelRoleForm', mRole);  
+
+                    form.on('submit(modelRoleSubmit)', function (data) {
+                        layer.load(2);
+                        $.post(url, data.field, function (res) {
+                            layer.closeAll('loading');
+                            if (res.code == 200) {
+                                layer.close(dIndex);
+                                layer.msg(res.msg, {icon: 1});
+                                insTb.reload();
+                            } else {
+                                layer.msg(res.msg, {icon: 2});
+                            }
+                        }, 'json');
+                        return false;
+                    });
+                }
+            });
+        }
+
+        function showPermModel(roleId) {
+            admin.open({
+                title: 'Role authority',
+                btn: ['save', 'cancel'],
+                content: '<ul id="treeAuth" class="ztree"></ul>',
+                success: function (layero, index) {
+                    $(layero).children('.layui-layer-content').css({'max-height': '300px', 'overflow': 'auto'});
+                    layer.load(2);
+                    var setting = {check: {enable: true}, data: {simpleData: {enable: true}}};
+                    $.get('role/authTree', {
+                        roleId: roleId
+                    }, function (res) {
+                        $.fn.zTree.init($('#treeAuth'), setting, res);
+                        layer.closeAll('loading');
+                    }, 'json');
+                },
+                yes: function (index) {
+                    layer.load(2);
+                    var treeObj = $.fn.zTree.getZTreeObj('treeAuth');
+                    var nodes = treeObj.getCheckedNodes(true);
+                    var ids = new Array();
+                    for (var i = 0; i < nodes.length; i++) {
+                        ids[i] = nodes[i].id;
+                    }
+                    $.post('role/updateRoleAuth', {
+                        roleId: roleId,
+                        authIds: JSON.stringify(ids)
+                    }, function (res) {
+                        layer.closeAll('loading');
+                        if (200 == res.code) {
+                            layer.msg(res.msg, {icon: 1});
+                            layer.close(index);
+                        } else {
+                            layer.msg(res.msg, {icon: 2});
+                        }
+                    }, 'json');
+                }
+            });
+        }
+
+    });
+</script>
+</body>
+</html>

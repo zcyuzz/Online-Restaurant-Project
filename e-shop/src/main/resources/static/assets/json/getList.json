@@ -1,0 +1,33 @@
+{
+  "code": 0
+  ,"msg": ""
+  ,"data": {
+    "mine": {
+      "username": "help center"
+      ,"id": "1"
+      ,"status": "online"
+      ,"avatar": "http://localhost/logogo.png"
+    }
+    ,"friend": [{
+      "groupname": "help center"
+      ,"id": 0
+      ,"list": [{
+        "username": "1"
+        ,"id": "2"
+        ,"avatar": "http://localhost/logogo.png"
+      },{
+        "username": "2"
+        ,"id": "3"
+        ,"avatar": "http://localhost/logogo.png"
+      },{
+        "username": "3"
+        ,"id": "4"
+        ,"avatar": "http://localhost/logogo.png"
+      },{
+        "username": "4"
+        ,"id": "5"
+        ,"avatar": "http://localhost/logogo.png"
+      }]
+    }]
+  }
+}

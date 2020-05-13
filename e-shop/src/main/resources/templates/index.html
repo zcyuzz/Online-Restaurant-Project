@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CZ restaurant</title>
+    <% include("./layout/css.html"){} %>
+</head>
+<body class="layui-layout-body">
+<div class="layui-layout layui-layout-admin">
+    <% include("./layout/header.html"){} %>
+    <% include("./layout/side.html"){} %>
+    <div class="layui-body"></div>
+    <div class="layui-footer">
+        copyright  2020 CZ all rights reserved.<span class="pull-right">v1.0.0</span>
+    </div>
+</div>
+
+
+<% include("./layout/js.html"){} %>
+<script type="text/javascript" src="${ctxPath}/assets/js/util/reconnecting-websocket.min.js"></script>
+<script>
+    layui.use(['index','layim','upload'], function () {
+        var $ = layui.jquery;
+        var index = layui.index;
+        var layim = layui.layim;
+        var upload = layui.upload;
+
+        layim.config({
+            init: {
+                url:'/system/user/listByIm'
+                ,type: 'get' 
+                ,data: {} 
+            }
+            
+            ,uploadImage: {
+                url: '/file/uploadIm' 
+                ,type: 'post' 
+            }
+        });
+        layim.cache().base.title = "CZ restaurant";
+        var websocket = null;
+
+       
+        if ('WebSocket' in window) {
+            websocket = new ReconnectingWebSocket("ws://localhost:8089/websocket/" + "${loginUser.userId}");
+        } else {
+            alert('Not support websocket')
+        }
+
+     
+        websocket.onerror = function() {};
+        websocket.onopen = function() {};
+        websocket.onmessage = function(event) {
+            var data = event.data;
+            layim.getMessage(JSON.parse(data));
+        }
+        websocket.onclose = function() {
+        }
+
+        
+        window.onbeforeunload = function() {
+            closeWebSocket();
+        }
+
+        
+        layim.on('sendMessage', function(res) {
+            var mine = res.mine; 
+            var to = res.to; 
+            var msg = {
+                'userId':mine.id,
+                "nickName":mine.username,
+                'avatar':mine.avatar,
+                "type":to.type,
+                'collectUserId': to.id,
+                'collectUserName':to.name,
+                'content': mine.content,
+                'collectAvatar':to.avatar
+            }
+            console.log(JSON.stringify(msg));
+            send(JSON.stringify(msg));
+        });
+
+  
+        function setMessageInnerHTML(innerHTML) {
+            //    document.getElementById('message').innerHTML += innerHTML + '<br/>';
+        }
+       
+        function closeWebSocket() {
+            websocket.close();
+        }
+
+        
+        function send(msg) {
+            websocket.send(msg);
+        }
+
+       
+        index.loadHome({
+            menuPath: 'console',
+            menuName: '<i class="layui-icon layui-icon-home"></i>'
+        });
+
+    });
+</script>
+</body>
+</html>

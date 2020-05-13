@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>角色管理</title>
+    <% include("../layout/css.html"){} %>
+</head>
+<body>
+<!-- 正文开始 -->
+<div class="layui-fluid ew-console-wrapper">
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-xs12 layui-col-sm6 layui-col-md3">
+            <div class="layui-card">
+                <div class="layui-card-header">
+                    访问量<span class="layui-badge layui-badge-green pull-right">日</span>
+                </div>
+                <div class="layui-card-body">
+                    <p class="lay-big-font">${nowVisitorCount}</p>
+                    <p>总访问量<span class="pull-right">${visitorAllCount}</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-xs12 layui-col-sm6 layui-col-md3">
+            <div class="layui-card">
+                <div class="layui-card-header">
+                    销售额<span class="layui-badge layui-badge-blue pull-right">月</span>
+                </div>
+                <div class="layui-card-body">
+                    <p class="lay-big-font"><span style="font-size: 26px;line-height: 1;">¥</span>${monthMoney}</p>
+                    <p>总销售额<span class="pull-right">${totalMoney}</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-xs12 layui-col-sm6 layui-col-md3">
+            <div class="layui-card">
+                <div class="layui-card-header">
+                    订单量<span class="layui-badge layui-badge-red pull-right">月</span>
+                </div>
+                <div class="layui-card-body">
+                    <p class="lay-big-font">${monthOrderCount}</p>
+                    <p>总订单<span class="pull-right">${orderAllCount}</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-xs12 layui-col-sm6 layui-col-md3">
+            <div class="layui-card">
+                <div class="layui-card-header">
+                    新增用户
+                    <span class="icon-text pull-right" lay-tips="当日新增" lay-direction="4" lay-offset="5px,5px">
+                        <i class="layui-icon layui-icon-tips"></i>
+                    </span>
+                </div>
+                <div class="layui-card-body">
+                    <p class="lay-big-font">${nowAddUserCount} <span style="font-size: 24px;line-height: 1;">位</span></p>
+                    <p>总用户<span class="pull-right">${userAllCount}</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-lg8 layui-col-md7">
+            <div class="layui-card">
+                <div class="layui-card-header">本年度销售额趋势</div>
+                <div class="layui-card-body" style="height: 280px;overflow: hidden;">
+                    <div id="xse" style="height: 280px;margin-top: -20px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-lg4 layui-col-md5">
+            <div class="layui-card">
+                <div class="layui-card-header">订单转化率</div>
+                <div class="layui-card-body" style="height: 280px;overflow: hidden;">
+                    <div id="hjxl" style="width: 100%;height: 280px;margin-top: -20px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- js部分 -->
+<% include("../layout/js.html"){} %>
+<script src="${ctxPath}/assets/libs/echarts/echarts.min.js"></script>
+<script src="${ctxPath}/assets/libs/echarts/echartsTheme.js"></script>
+<script>
+    layui.use(['layer', 'form', 'table', 'util', 'admin', 'tableX'], function () {
+        var $ = layui.jquery;
+        var layer = layui.layer;
+        var form = layui.form;
+        var table = layui.table;
+        var util = layui.util;
+        var admin = layui.admin;
+        var tableX = layui.tableX;
+
+        // 渲染本年销售额图表
+        var myCharts3 = echarts.init(document.getElementById('xse'), myEchartsTheme);
+        $.get('report/getYearMonthMoneyTotal',{},function(res){
+            console.log(res);
+            var arr=Array();
+            $.each(res.data,function(index,value){
+                arr.push(value.month1);
+                arr.push(value.month2);
+                arr.push(value.month3);
+                arr.push(value.month4);
+                arr.push(value.month5);
+                arr.push(value.month6);
+                arr.push(value.month7);
+                arr.push(value.month8);
+                arr.push(value.month9);
+                arr.push(value.month10);
+                arr.push(value.month11);
+                arr.push(value.month12);
+            })
+            console.log(arr);
+            var option3 = {
+                title: {
+                    textStyle: {
+                        color: '#000',
+                        fontSize: 14
+                    }
+                },
+                tooltip: {},
+                grid: {
+                    left: '0',
+                    right: '0',
+                    bottom: '0',
+                    containLabel: true
+                },
+                xAxis: {
+                    data: ['1月', '2月', '3月', '4月', '6月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+                },
+                yAxis: {},
+                series: [{
+                    type: 'bar',
+                    data: arr,
+                    barMaxWidth: 45
+                }]
+            };
+            myCharts3.setOption(option3);
+        })
+
+        // 渲染订单转化率图表
+        var myCharts2 = echarts.init(document.getElementById('hjxl'), myEchartsTheme);
+        $.get('report/getOrderCvr',{},function(res){
+            var option2 = {
+                tooltip: {
+                    formatter: "{a} <br/>{b} : {c}%"
+                },
+                series: [
+                    {
+                        name: '订单转化率',
+                        type: 'gauge',
+                        detail: {formatter: '{value}%'},
+                        data: [{value: res.data, name: '订单转化率'}]
+                    }
+                ]
+            };
+            myCharts2.setOption(option2);
+        })
+    });
+</script>
+</body>
+</html>

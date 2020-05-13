@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cz.spring.shop.dao.OrderMapper">
+ 
+    <select id="selectListFull" resultType="com.cz.spring.shop.model.Order">
+        select
+        e.*,
+        u.nick_name as nickName,
+        u.phone as phone,
+        u2.phone as publishPhone,
+        u.receiving_address as receivingAddress,
+        g.goods_name as goodsName,
+        g.goods_img as goodsImg,
+        g2.goods_name as logoName,
+        g2.goods_img as logoImg
+        from e_order e
+        left join sys_user u on e.user_id=u.user_id
+        left join sys_user u2 on e.publish_id=u2.user_id
+        left join e_goods g on e.goods_sn=g.goods_sn
+        left join e_goods g2 on e.made_logo=g2.goods_sn
+        <where>
+            <if test="page.pageData.userId!=null">
+                e.user_id=#{page.pageData.userId}
+            </if>
+            <if test="page.pageData.publish_id!=null">
+                and e.publish_id =#{page.pageData.publish_id}
+            </if>
+            <if test="page.pageData.goodsName!=null">
+                and g.goods_name like '%${page.pageData.goodsName}%'
+            </if>
+            <if test="page.pageData.orderStatus!=null">
+                and e.order_status like '%${page.pageData.orderStatus}%'
+            </if>
+        </where>
+    </select>
+
+    <select id="selectMonthConut" resultType="java.lang.Integer">
+        select count(*) from e_order
+        <where>
+            date_format(create_time,'%Y-%m' ) = date_format(now(),'%Y-%m')
+            and order_status=4
+        </where>
+    </select>
+
+    <select id="selectMonthMoney" resultType="java.math.BigDecimal">
+        select sum(goods_money) from e_order
+        <where>
+            date_format(create_time,'%Y-%m' ) = date_format(now(),'%Y-%m')
+            and order_status=4
+        </where>
+    </select>
+
+    <select id="selectMoneyTotal" resultType="java.math.BigDecimal">
+        select sum(goods_money) from e_order
+        <where>
+            order_status=4
+        </where>
+    </select>
+
+    <select id="selectYearMonthMoneyTotal" resultType="com.cz.spring.statistics.model.YearMonthModel">
+        select
+          IFNULL(sum(case month(create_time) when '1' then goods_money else 0 end),0) as month1,
+          IFNULL(sum(case month(create_time) when '2' then goods_money else 0 end),0) as month2,
+          IFNULL(sum(case month(create_time) when '3' then goods_money else 0 end),0) as month3,
+          IFNULL(sum(case month(create_time) when '4' then goods_money else 0 end),0) as month4,
+          IFNULL(sum(case month(create_time) when '5' then goods_money else 0 end),0) as month5,
+          IFNULL(sum(case month(create_time) when '6' then goods_money else 0 end),0) as month6,
+          IFNULL(sum(case month(create_time) when '7' then goods_money else 0 end),0) as month7,
+          IFNULL(sum(case month(create_time) when '8' then goods_money else 0 end),0) as month8,
+          IFNULL(sum(case month(create_time) when '9' then goods_money else 0 end),0) as month9,
+          IFNULL(sum(case month(create_time) when '10' then goods_money else 0 end),0) as month10,
+          IFNULL(sum(case month(create_time) when '11' then goods_money else 0 end),0) as month11,
+          IFNULL(sum(case month(create_time) when '12' then goods_money else 0 end),0) as month12
+          from e_order
+          where year(create_time)=date_format(now(),'%Y') and order_status=4;
+    </select>
+</mapper>
